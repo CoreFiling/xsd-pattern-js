@@ -1,8 +1,11 @@
 import { Branch, Piece, Regexp, SingleChar, MultiChar, WildChar, CharGroup, Quantifier, CharRange, Complement, Category } from "./components";
 
+
+const flag = /./.unicode !== undefined ? 'u' : undefined;
+
 export var regexpToJS = (input: Regexp): RegExp => {
     var branchesJS = input.branches.map(branchToJSre);
-    return new RegExp("^(" + branchesJS.join('|') + ")$","u");
+    return new RegExp("^(" + branchesJS.join('|') + ")$", flag);
 }
 
 var regexpToJSre = (input: Regexp): string => {
@@ -26,7 +29,7 @@ var atomtoJSre = (atom: Regexp | SingleChar | MultiChar | WildChar | CharGroup |
         return singleChartoJSre(atom)
     }
     else if (atom instanceof MultiChar) {
-        if (['s', 'S', 'd', 'D', 'w', 'W'].includes(atom.code))
+        if (['s', 'S', 'd', 'D', 'w', 'W'].indexOf(atom.code) >= 0)
             return "\\" + atom.code;
         else
             return `[${multiCharToRange(atom)}]`
@@ -65,7 +68,7 @@ var multiCharToRange = (input: MultiChar): string => {
 }
 
 var singleChartoJSre = (input: SingleChar): string => {
-    if (['^', '$', '\\', '.', '*', '+', '?', '(', ')', '[', ']', '{', '}', '|'].includes(input.char)) {
+    if (['^', '$', '\\', '.', '*', '+', '?', '(', ')', '[', ']', '{', '}', '|'].indexOf(input.char) >= 0) {
         return `\\${input.char}`
     }
     return input.char;
@@ -80,7 +83,7 @@ var partstoJSre = (input: SingleChar | MultiChar | CharRange | Category | Comple
         return singleChartoJSre(input)
     }
     else if (input instanceof MultiChar) {
-        if (['s', 'S', 'd', 'D', 'w', 'W'].includes(input.code))
+        if (['s', 'S', 'd', 'D', 'w', 'W'].indexOf(input.code) >= 0)
             return "\\" + input.code;
         else
             return multiCharToRange(input)
@@ -98,14 +101,15 @@ var partstoJSre = (input: SingleChar | MultiChar | CharRange | Category | Comple
 }
 
 
+
 var quantifiertoJsre = (q: Quantifier): string => {
     if (q.min == 1 && q.max == 1) {
         return "";
     }
-    else if (q.min == 1 && !Number.isFinite(q.max)) {
+    else if (q.min == 1 && !isFinite(q.max)) {
         return "+"
     }
-    else if (q.min == 0 && !Number.isFinite(q.max)) {
+    else if (q.min == 0 && !isFinite(q.max)) {
         return "*"
     }
     else if (q.min == 0 && q.max == 1) {
@@ -114,7 +118,7 @@ var quantifiertoJsre = (q: Quantifier): string => {
     else if (q.min == q.max) {
         return `{${q.min}}`
     }
-    else if (!Number.isFinite(q.max)) {
+    else if (!isFinite(q.max)) {
         return `{${q.min},}`
     }
     else {
